@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e3a5f">
+<link rel="manifest" href='data:application/manifest.json,{"name":"研学本","short_name":"研学本","start_url":".","display":"standalone","background_color":"%23f4f5f7","theme_color":"%231e3a5f","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' rx='100' fill='%231e3a5f'/%3E%3Ctext x='50%25' y='55%25' font-size='230' text-anchor='middle' dominant-baseline='middle' fill='%23c9a84c' font-family='sans-serif'%3E%E7%A0%94%3C/text%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml","purpose":"any"}]}'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>研学本 · 高中知识学习与做题整理</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#1e3a5f;--primary-l:#2d5a8a;--accent:#c9a84c;
+  --bg:#f4f5f7;--card:#fff;--text:#222;--text-l:#777;--line:#e5e7eb;
+  --green:#16a34a;--red:#dc2626;--radius:12px;
+}
+html,body{height:100%;font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:16px}
+#app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
+header{background:var(--primary);color:#fff;padding:14px 16px;font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+header .sub{font-size:12px;font-weight:400;opacity:.8}
+main{flex:1;overflow-y:auto;padding:14px 14px 76px}
+.page{display:none}
+.page.active{display:block}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#fff;border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar button{flex:1;background:none;border:none;padding:8px 0 6px;font-size:11px;color:var(--text-l);display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.tabbar button .ico{font-size:20px;line-height:1}
+.tabbar button.on{color:var(--primary);font-weight:600}
+.badge{background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;position:absolute;margin-left:-4px;margin-top:-6px}
+.card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card h3{font-size:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-box{background:var(--card);border-radius:var(--radius);padding:12px;text-align:center}
+.stat-box .num{font-size:24px;font-weight:700;color:var(--primary)}
+.stat-box .lbl{font-size:12px;color:var(--text-l);margin-top:2px}
+.subj-btn{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:16px 10px;text-align:center;font-size:15px;cursor:pointer;transition:.15s}
+.subj-btn:active{transform:scale(.96)}
+.subj-btn .em{font-size:22px;display:block;margin-bottom:4px}
+.subj-btn .cnt{font-size:11px;color:var(--text-l);margin-top:3px}
+.btn{display:inline-block;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:15px;cursor:pointer}
+.btn:active{opacity:.85}
+.btn.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn.red{background:var(--red)}
+.btn.block{width:100%;text-align:center;padding:13px}
+.btn:disabled{background:#aaa}
+input,textarea,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
+textarea{min-height:90px;resize:vertical;line-height:1.6}
+label{font-size:13px;color:var(--text-l);display:block;margin:10px 0 4px}
+.k-item{padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+.k-item:last-child{border-bottom:none}
+.k-item .t{font-size:15px;font-weight:600}
+.k-item .m{font-size:12px;color:var(--text-l);margin-top:3px}
+.tag{display:inline-block;background:#eef2f7;color:var(--primary);font-size:11px;border-radius:4px;padding:2px 8px;margin:2px 3px 0 0}
+.tag.acc{background:#f7f0dd;color:#8a6d1a}
+.q-opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:12px;margin-bottom:8px;font-size:15px;cursor:pointer}
+.q-opt.sel{border-color:var(--primary);background:#eef4fb}
+.q-opt.right{border-color:var(--green);background:#e8f7ee}
+.q-opt.wrong{border-color:var(--red);background:#fdecec}
+.q-opt .k{font-weight:700;margin-right:6px;color:var(--primary)}
+.bar{height:8px;background:#eee;border-radius:4px;overflow:hidden}
+.bar>div{height:100%;border-radius:4px;background:var(--primary);transition:width .3s}
+.bar.g>div{background:var(--green)}
+.empty{text-align:center;color:var(--text-l);padding:40px 0;font-size:14px}
+.empty .em{font-size:40px;display:block;margin-bottom:8px;opacity:.5}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.modal-mask.show{display:flex}
+.modal{background:#fff;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:18px;animation:up .25s}
+@keyframes up{from{transform:translateY(60px);opacity:.5}to{transform:translateY(0);opacity:1}}
+.modal h3{font-size:17px;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:99;display:none;max-width:85%;text-align:center}
+.toast.show{display:block}
+.seg{display:flex;background:#e9ebef;border-radius:8px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:none;background:none;padding:8px;font-size:14px;border-radius:6px;color:var(--text-l);cursor:pointer}
+.seg button.on{background:#fff;color:var(--primary);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.chip{display:inline-block;background:#eef2f7;color:var(--primary);border-radius:14px;padding:5px 13px;font-size:13px;margin:0 6px 6px 0;cursor:pointer;border:1px solid transparent}
+.chip.on{background:var(--primary);color:#fff}
+.chip.g{border-color:var(--line);color:var(--text)}
+.chip.g.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.q-text{font-size:16px;line-height:1.7;margin-bottom:14px;white-space:pre-wrap}
+.q-img{max-width:100%;border-radius:8px;margin-bottom:12px}
+.ana{background:#f8f6ef;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 12px;font-size:14px;line-height:1.6;margin-top:10px;white-space:pre-wrap}
+.res-banner{text-align:center;padding:20px 0}
+.res-banner .big{font-size:42px;font-weight:800;color:var(--primary)}
+.progress-line{display:flex;justify-content:space-between;font-size:12px;color:var(--text-l);margin-bottom:8px}
+.del{font-size:12px;color:var(--red);cursor:pointer;float:right}
+.search-bar{margin-bottom:10px}
+.mistake-item{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--line)}
+.mistake-item:last-child{border:none}
+.stage{font-size:11px;border-radius:4px;padding:2px 8px;white-space:nowrap;margin-left:8px}
+.st0{background:#fdecec;color:var(--red)}.st1{background:#fff3e0;color:#e65100}.st2{background:#f7f0dd;color:#8a6d1a}.st3{background:#e8f7ee;color:var(--green)}.st4{background:#e3f2fd;color:#1565c0}
+.filters{display:flex;flex-wrap:wrap;margin-bottom:10px}
+.hint{font-size:12px;color:var(--text-l);margin-top:6px}
+.footer-note{text-align:center;font-size:11px;color:#aaa;margin:20px 0 10px}
+.divider{height:1px;background:var(--line);margin:12px 0}
+.date-group{font-size:13px;color:var(--text-l);margin:14px 0 6px;font-weight:600}
+.stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px}
+.stat-bar-row .nm{width:44px;flex-shrink:0}
+.stat-bar-row .pc{width:42px;text-align:right;flex-shrink:0;color:var(--text-l)}
+@media(min-width:521px){#app{box-shadow:0 0 20px rgba(0,0,0,.08)}}
+</style>
+</head>
+<body>
+<div id="app">
+<header><span id="hd-title">研学本</span><span class="sub" id="hd-sub">上海高中 · 六科</span></header>
+<main>
+  <section class="page" id="page-home"></section>
+  <section class="page" id="page-bank"></section>
+  <section class="page" id="page-study"></section>
+  <section class="page" id="page-wrong"></section>
+  <section class="page" id="page-me"></section>
+</main>
+<nav class="tabbar">
+  <button data-p="home" class="on"><span class="ico">🏠</span>首页</button>
+  <button data-p="bank"><span class="ico">📝</span>做题</button>
+  <button data-p="study"><span class="ico">📚</span>知识点</button>
+  <button data-p="wrong"><span class="ico">🔁</span>错题本<span class="badge" id="wrong-badge" style="display:none">0</span></button>
+  <button data-p="me"><span class="ico">⚙️</span>我的</button>
+</nav>
+</div>
+<div class="modal-mask" id="mask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 数据层 ================= */
+const KEY='studyApp_v1';
+const SUBJECTS=['语文','数学','英语','物理','化学','生物'];
+const EMOJI={'语文':'📖','数学':'➗','英语':'🔤','物理':'⚛️','化学':'🧪','生物':'🧬'};
+const STAGE_DAYS=[1,3,7,30];
+const STAGE_TXT=['新错','1天后复习','3天后复习','7天后复习','30天后复习','已掌握'];
+
+let DB=null;
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function todayStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){toast('存储空间不足，建议导出备份后清理图片')}}
+function load(){const s=localStorage.getItem(KEY);DB=s?JSON.parse(s):null}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+function seed(){
+  const k=(subject,title,content,tags)=>({id:uid(),subject,title,content,tags,created:Date.now()});
+  const q=(subject,type,content,options,answer,analysis,tags,difficulty)=>({id:uid(),subject,type,content,options,answer,analysis,tags:tags||[],difficulty:difficulty||3,image:'',created:Date.now()});
+  DB={
+    knowledge:[
+      k('数学','函数单调性','设函数 f(x) 在区间 I 上有定义：对任意 x₁<x₂∈I，若 f(x₁)<f(x₂)，则 f 在 I 上单调递增；若 f(x₁)>f(x₂)，则单调递减。\n\n判定方法：\n1. 定义法（作差比较）\n2. 导数法：f′(x)>0 ⇒ 递增；f′(x)<0 ⇒ 递减\n3. 复合函数：同增异减',['函数','必考']),
+      k('数学','等差数列','通项：aₙ = a₁ + (n−1)d\n前n项和：Sₙ = n(a₁+aₙ)/2 = na₁ + n(n−1)d/2\n\n性质：若 m+n=p+q，则 aₘ+aₙ=aₚ+a_q。',['数列']),
+      k('物理','匀变速直线运动','三个基本公式：\nv = v₀ + at\nx = v₀t + ½at²\nv² − v₀² = 2ax\n\n平均速度：v̄ = (v₀+v)/2 = x/t（仅匀变速适用）',['运动学','必考']),
+      k('物理','牛顿第二定律','F = ma\n\n合力与加速度瞬时对应、方向相同。解题步骤：\n1. 受力分析（重力、弹力、摩擦力、其他力）\n2. 正交分解\n3. 列方程：沿运动方向 F合=ma',['力学','必考']),
+      k('化学','物质的量','n = N/Nₐ = m/M = V/Vₘ（气体，标况 Vₘ=22.4 L/mol）\n\n注意：① 标况才可用 22.4；② 水、SO₃ 等标况下非气态。',['化学计量','易错']),
+      k('化学','氧化还原反应','升失氧（升价、失电子、被氧化、作还原剂）；降得还。\n\n配平步骤：标变价 → 列升降 → 求最小公倍数 → 配平变价物质 → 配电荷（酸性用H⁺、碱性用OH⁻）→ 配水查氧。',['氧化还原']),
+      k('生物','细胞膜结构与功能','流动镶嵌模型：磷脂双分子层为基本支架，蛋白质分子镶嵌、贯穿或覆盖其中；糖蛋白位于外表面，与识别有关。\n\n功能特性：选择透过性。',['细胞']),
+      k('生物','孟德尔分离定律','杂合子自交后代性状分离比 3:1；测交后代 1:1。\n\n实质：等位基因随同源染色体分开而分离，分别进入两个配子。',['遗传','必考']),
+      k('语文','文言文实词推断六法','1. 语境分析法\n2. 语法分析法（看词性）\n3. 对称结构推断\n4. 通假字联想\n5. 成语印证\n6. 教材迁移',['文言文']),
+      k('英语','定语从句关系词选择','先行词指人：who/whom/that；指物：which/that；表所属：whose；指时间：when；指地点：where；指原因：why。\n\n非限制性从句（逗号后）只用 which/who，不能用 that。',['语法','易错']),
+      k('英语','完形填空解题步骤','1. 跳过空格通读全文，把握主旨\n2. 逐空作答：先易后难，利用复现与同现\n3. 复读全文，检查逻辑一致性',['阅读'])
+    ],
+    questions:[
+      q('数学','choice','函数 f(x)=x²−2x−3 的单调递增区间是（ ）',['A. (−∞,1]','B. [1,+∞)','C. (−∞,−1]','D. [−1,+∞)'],'B','对称轴 x=1，开口向上，故递增区间为 [1,+∞)。也可用导数：f′(x)=2x−2≥0 ⇒ x≥1。',['函数'],2),
+      q('数学','choice','等差数列 {aₙ} 中，a₃=5，a₇=13，则公差 d =（ ）',['A. 1','B. 2','C. 3','D. 4'],'B','a₇−a₃=4d=8 ⇒ d=2。',['数列'],2),
+      q('数学','judge','命题"∀x∈R, x²≥0"的否定是"∃x∈R, x²<0"。',[],'T','全称命题否定为存在命题，并否定结论。x²≥0 的否定是 x²<0。',['逻辑'],2),
+      q('物理','choice','汽车以 20 m/s 行驶，刹车加速度大小为 5 m/s²，刹车后 5 s 内的位移是（ ）',['A. 37.5 m','B. 40 m','C. 62.5 m','D. 50 m'],'B','先求刹停时间 t=v₀/a=4 s < 5 s，故实际运动 4 s。x=v₀t−½at²=20×4−0.5×5×16=40 m。注意"刹车陷阱"，不可直接代 5 s。',['运动学','易错'],4),
+      q('物理','choice','质量为 2 kg 的物体受到 10 N 水平拉力，摩擦力为 4 N，加速度大小为（ ）',['A. 5 m/s²','B. 7 m/s²','C. 3 m/s²','D. 2 m/s²'],'C','F合=10−4=6 N，a=F合/m=3 m/s²。',['力学'],2),
+      q('物理','judge','物体速度越大，所受合力一定越大。',[],'F','速度大小与合力无必然联系。匀速直线运动速度可以很大而合力为零。',['力学概念'],3),
+      q('化学','choice','下列物质在标准状况下体积约为 22.4 L 的是（ ）',['A. 18 g 水','B. 1 mol SO₃','C. 0.5 mol N₂ 与 0.5 mol O₂ 混合气','D. 1 mol 苯'],'C','标况下水、SO₃、苯均非气态。混合气共 1 mol，标况体积约 22.4 L。',['化学计量','易错'],3),
+      q('化学','choice','在反应 2FeCl₂ + Cl₂ = 2FeCl₃ 中，氧化剂是（ ）',['A. FeCl₂','B. Cl₂','C. FeCl₃','D. 无法判断'],'B','Fe²⁺ 升价被氧化，Cl₂ 降价被还原，故 Cl₂ 是氧化剂。',['氧化还原'],2),
+      q('化学','fill','Na₂CO₃ 的俗名是____。',[],['苏打','纯碱'],'碳酸钠俗名苏打、纯碱；注意与小苏打（NaHCO₃）区分。',['元素化合物'],1),
+      q('生物','choice','细胞膜的基本支架是（ ）',['A. 蛋白质分子层','B. 磷脂双分子层','C. 糖蛋白','D. 胆固醇'],'B','流动镶嵌模型：磷脂双分子层构成基本支架，蛋白质镶嵌其中。',['细胞'],1),
+      q('生物','choice','基因型为 Aa 的个体自交，后代中杂合子占（ ）',['A. 1/4','B. 1/2','C. 3/4','D. 2/3'],'B','Aa×Aa → 1AA:2Aa:1aa，杂合子 Aa 占 1/2。',['遗传'],2),
+      q('生物','judge','有氧呼吸第一阶段产生大量 ATP。',[],'F','三个阶段中，第三阶段（氧化磷酸化阶段）产生大量 ATP，第一阶段只产生少量 ATP。',['代谢'],2),
+      q('语文','choice','下列句中成语使用恰当的一项是（ ）',['A. 他上课经常迟到，真是孜孜不倦。','B. 这部小说情节跌宕起伏，引人入胜。','C. 敌人被我军围得水泄不通，真是赏心悦目。','D. 他做事毛手毛脚，真可谓胸有成竹。'],'B','A 孜孜不倦为褒义，指勤奋；C 赏心悦目指美景令人愉悦；D 胸有成竹指有把握，均不合语境。',['成语'],2),
+      q('语文','choice','"师者，所以传道受业解惑也"中"所以"的意思是（ ）',['A. 因此','B. ……的原因','C. 用来……的','D. 所以'],'C','此处"所以"表凭借，意为"用来……的"。整句：老师是用来传授道理、教授学业、解答疑惑的人。',['文言文'],3),
+      q('英语','choice','The book ____ I bought yesterday is very interesting.',['A. who','B. whom','C. which','D. whose'],'C','先行词 the book 指物，关系词在从句中作宾语，用 which 或 that。',['定语从句'],2),
+      q('英语','choice','—____ do you visit your grandparents? —Once a month.',['A. How long','B. How often','C. How soon','D. How far'],'B','答语 Once a month 表频率，应用 How often 提问。',['语法'],1),
+      q('英语','judge','"He suggested that we went there by bus." 该句语法正确。',[],'F','suggest 表"建议"接宾语从句时用虚拟语气：suggested that we (should) go，从句谓语用动词原形，不用 went。',['虚拟语气','易错'],3)
+    ],
+    records:[],mistakes:{},settings:{dailyGoal:30}
+  };
+  save();
+}
+
+/* ================= 工具 ================= */
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2000)}
+function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('mask').classList.add('show')}
+function closeModal(){document.getElementById('mask').classList.remove('show')}
+document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeModal()});
+
+function normFill(s){return String(s).trim().replace(/\s+/g,'').replace(/[()（）]/g,'').toLowerCase()}
+function fmtDate(ts){const d=new Date(ts);return (d.getMonth()+1)+'/'+d.getDate()}
+function dueMistakes(){const t=Date.now();return Object.values(DB.mistakes).filter(m=>m.stage<4&&m.nextReview<=t)}
+function subjectStats(sj){const rs=DB.records.filter(r=>{const q=DB.questions.find(x=>x.id===r.qid);return q&&q.subject===sj});if(!rs.length)return null;return{total:rs.length,correct:rs.filter(r=>r.ok).length}}
+function imgCompress(file,cb){const img=new Image();const rd=new FileReader();rd.onload=e=>{img.onload=()=>{const max=800;let w=img.width,h=img.height;if(w>max){h=h*max/w;w=max}if(h>max){w=w*max/h;h=max}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',0.7))};img.src=e.target.result};rd.readAsDataURL(file)}
+
+/* ================= 路由 ================= */
+const PAGES={home:'首页',bank:'做题',study:'知识点',wrong:'错题本',me:'我的'};
+function go(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  document.getElementById('hd-title').textContent=PAGES[p];
+  document.querySelector('main').scrollTop=0;window.scrollTo(0,0);
+  ({home:renderHome,bank:renderBank,study:renderStudy,wrong:renderWrong,me:renderMe})[p]();
+  updBadge();
+}
+document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.p));
+function updBadge(){const n=dueMistakes().length;const b=document.getElementById('wrong-badge');b.style.display=n?'inline-block':'none';b.textContent=n>99?'99+':n}
+
+/* ================= 首页 ================= */
+function renderHome(){
+  const due=dueMistakes().length;
+  const today=todayStr();const todayRecords=DB.records.filter(r=>todayStr(r.time)===today);
+  const total=DB.records.length,corr=DB.records.filter(r=>r.ok).length;
+  const kCount=DB.knowledge.length,qCount=DB.questions.length;
+  const recent=[...DB.records].sort((a,b)=>b.time-a.time).slice(0,8);
+  let html=`
+  <div class="card" style="background:linear-gradient(135deg,#1e3a5f,#2d5a8a);color:#fff">
+    <div style="font-size:14px;opacity:.85">${new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'})}</div>
+    <div style="font-size:20px;font-weight:700;margin:6px 0">今日待复习 ${due} 题 · 已练 ${todayRecords.length} 题</div>
+    ${due?`<button class="btn" style="background:#c9a84c;color:#222;margin-top:6px" onclick="startReview()">开始复习错题 →</button>`:`<div style="font-size:13px;opacity:.8;margin-top:6px">错题均已复习到位。</div>`}
+  </div>
+  <div class="grid3">
+    <div class="stat-box"><div class="num">${qCount}</div><div class="lbl">题目总数</div></div>
+    <div class="stat-box"><div class="num">${kCount}</div><div class="lbl">知识点</div></div>
+    <div class="stat-box"><div class="num">${total?Math.round(corr/total*100):0}%</div><div class="lbl">总正确率</div></div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>快速开始</h3>
+    <div class="grid3">
+      ${SUBJECTS.map(s=>`<div class="subj-btn" onclick="goBank('${s}')"><span class="em">${EMOJI[s]}</span>${s}<div class="cnt">${DB.questions.filter(q=>q.subject===s).length} 题</div></div>`).join('')}
+    </div>
+  </div>
+  <div class="card"><h3>最近做题</h3>
+    ${recent.length?recent.map(r=>{const q=DB.questions.find(x=>x.id===r.qid);if(!q)return'';return`<div class="k-item" onclick="viewQuestion('${q.id}')"><div class="t">${r.ok?'✅':'❌'} ${esc(q.content.slice(0,40))}${q.content.length>40?'…':''}</div><div class="m">${q.subject} · ${fmtDate(r.time)}</div></div>`}).join(''):'<div class="empty"><span class="em">📝</span>还没有做题记录</div>'}
+  </div>`;
+  document.getElementById('page-home').innerHTML=html;
+}
+
+/* ================= 做题（题库） ================= */
+let bankSubject=null;
+function goBank(sj){bankSubject=sj;go('bank')}
+function renderBank(){
+  const el=document.getElementById('page-bank');
+  if(!bankSubject){
+    el.innerHTML=`<div class="card"><h3>选择科目</h3><div class="grid2">
+      ${SUBJECTS.map(s=>`<div class="subj-btn" onclick="goBank('${s}')"><span class="em">${EMOJI[s]}</span>${s}<div class="cnt">${DB.questions.filter(q=>q.subject===s).length} 题 · 错题 ${DB.questions.filter(q=>q.subject===s&&DB.mistakes[q.id]).length}</div></div>`).join('')}
+    </div></div>
+    <div class="card"><h3>综合练习</h3>
+      <button class="btn block" onclick="startMixed()">六科混合抽题</button>
+      <div class="hint">按各科题目比例随机抽取</div>
+    </div>`;
+    return;
+  }
+  const qs=DB.questions.filter(q=>q.subject===bankSubject);
+  const tags=[...new Set(qs.flatMap(q=>q.tags))];
+  el.innerHTML=`
+  <div class="card"><h3>${EMOJI[bankSubject]} ${bankSubject} <span class="del" style="font-size:13px;color:var(--primary)" onclick="bankSubject=null;renderBank()">← 换科目</span></h3>
+    <div style="font-size:13px;color:var(--text-l);margin-bottom:10px">共 ${qs.length} 题 · 待复习错题 ${qs.filter(q=>DB.mistakes[q.id]&&DB.mistakes[q.id].stage<4&&DB.mistakes[q.id].nextReview<=Date.now()).length} 题</div>
+    <div class="seg" id="tag-seg">${tags.map((t,i)=>`<button class="${i===0?'on':''}" onclick="selTag(this,'${t}')">${t}</button>`).join('')}</div>
+    <label>抽题数量</label>
+    <input type="number" id="quiz-n" value="${Math.min(10,qs.length)||10}" min="1" max="${qs.length}">
+    <div style="margin-top:12px"><button class="btn block" onclick="startQuiz('${bankSubject}')">开始练习</button></div>
+    <div style="margin-top:10px"><button class="btn ghost block" onclick="startReview('${bankSubject}')">只练本科错题</button></div>
+  </div>
+  <div class="card"><h3>题目列表</h3>
+    ${qs.length?qs.map(q=>`<div class="k-item" onclick="viewQuestion('${q.id}')"><div class="t">${typeIcon(q.type)} ${esc(q.content.slice(0,42))}${q.content.length>42?'…':''}</div><div class="m">${q.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${DB.mistakes[q.id]?`<span class="tag acc">错${DB.mistakes[q.id].wrongCount}次</span>`:''}</div></div>`).join(''):'<div class="empty"><span class="em">📭</span>该科目暂无题目，去"我的"页添加</div>'}
+  </div>`;
+}
+let curTag='';
+function selTag(btn,t){document.querySelectorAll('#tag-seg button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');curTag=t}
+function typeIcon(t){return t==='choice'?'🔘':t==='fill'?'✏️':'✔️'}
+function startMixed(){
+  const all=[...DB.questions];
+  if(all.length<1)return toast('题库为空');
+  const n=Math.min(10,all.length);
+  const ids=all.map(q=>q.id).sort(()=>Math.random()-.5).slice(0,n);
+  startQuizFlow(ids,'综合练习');
+}
+
+/* ================= 答题流程 ================= */
+let QZ=null;
+function startQuiz(sj){
+  let pool=DB.questions.filter(q=>q.subject===sj);
+  if(curTag)pool=pool.filter(q=>q.tags.includes(curTag));
+  const n=Math.min(parseInt(document.getElementById('quiz-n').value)||10,pool.length);
+  if(!pool.length)return toast('该范围无题');
+  const ids=pool.map(q=>q.id).sort(()=>Math.random()-.5).slice(0,n);
+  startQuizFlow(ids,sj+(curTag?'·'+curTag:''));
+}
+function startQuizFlow(ids,title){
+  QZ={ids,cur:0,ans:[],correct:0,start:Date.now(),title};
+  renderQuiz();
+}
+function renderQuiz(){
+  const q=DB.questions.find(x=>x.id===QZ.ids[QZ.cur]);
+  const total=QZ.ids.length,idx=QZ.cur;
+  let body=`<div class="progress-line"><span>${esc(QZ.title)}</span><span>${idx+1} / ${total}</span></div>
+  <div class="bar"><div style="width:${idx/total*100}%"></div></div>
+  <div class="card" style="margin-top:12px">
+    <div style="font-size:12px;color:var(--text-l);margin-bottom:8px">${EMOJI[q.subject]} ${q.subject} ${typeIcon(q.type)} ${q.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+    <div class="q-text">${esc(q.content)}</div>
+    ${q.image?`<img class="q-img" src="${q.image}">`:''}`;
+  if(q.type==='choice'){
+    body+=q.options.map((o,i)=>`<button class="q-opt" id="opt${i}" onclick="pickOpt(${i})"><span class="k">${'ABCDEF'[i]}</span>${esc(o.replace(/^[A-F][.、．]\s*/,''))}</button>`).join('');
+    body+=`<button class="btn block" id="submit-btn" style="margin-top:6px" onclick="submitChoice('${q.id}')" disabled>提交答案</button>`;
+  }else if(q.type==='judge'){
+    body+=`<div class="grid2"><button class="q-opt" style="text-align:center" onclick="submitJudge('${q.id}',true)">✔ 正确</button><button class="q-opt" style="text-align:center" onclick="submitJudge('${q.id}',false)">✘ 错误</button></div>`;
+  }else{
+    body+=`<input id="fill-ans" placeholder="输入答案" autocomplete="off">
+    <button class="btn block" style="margin-top:10px" onclick="submitFill('${q.id}')">提交答案</button>`;
+  }
+  body+=`<div id="ana-box"></div></div>`;
+  document.getElementById('page-bank').innerHTML=body;
+}
+let picked=-1;
+function pickOpt(i){picked=i;document.querySelectorAll('.q-opt').forEach((b,j)=>b.classList.toggle('sel',j===i));document.getElementById('submit-btn').disabled=false}
+function afterAnswer(q,ok,userAns){
+  const dur=Math.round((Date.now()-QZ.start)/1000/QZ.ids.length);
+  DB.records.push({id:uid(),qid:q.id,ok,userAns:String(userAns),time:Date.now(),dur});
+  if(ok){QZ.correct++;const m=DB.mistakes[q.id];if(m&&m.stage<4){/* 复习中答对 */}}
+  else{const m=DB.mistakes[q.id];if(m){m.wrongCount++;m.lastWrong=Date.now();m.stage=0;m.nextReview=Date.now()}else{DB.mistakes[q.id]={qid:q.id,wrongCount:1,lastWrong:Date.now(),stage:0,nextReview:Date.now()}}}
+  save();
+  const box=document.getElementById('ana-box');
+  box.innerHTML=`<div class="ana" style="margin-top:14px"><b style="color:${ok?'var(--green)':'var(--red)'}">${ok?'回答正确':'回答错误'}</b> · 正确答案：${ansText(q)}${q.analysis?'\n解析：'+esc(q.analysis):''}</div>
+  <button class="btn block" style="margin-top:12px" onclick="nextQ()">${QZ.cur+1<QZ.ids.length?'下一题 →':'查看结果'}</button>`;
+  document.querySelector('main').scrollTop=document.body.scrollHeight;window.scrollTo(0,document.body.scrollHeight);
+}
+function ansText(q){if(q.type==='choice')return 'ABCDEF'[q.options.findIndex((o,i)=>('ABCDEF'[i])===q.answer)]||q.answer;if(q.type==='judge')return q.answer==='T'?'正确':'错误';return Array.isArray(q.answer)?q.answer.join(' / '):q.answer}
+function submitChoice(qid){
+  const q=DB.questions.find(x=>x.id===qid);
+  const realRight=q.options.findIndex((o,i)=>('ABCDEF'[i])===q.answer);
+  const ok=picked===realRight;
+  document.querySelectorAll('.q-opt').forEach((b,j)=>{b.style.pointerEvents='none';b.classList.remove('sel');if(j===realRight)b.classList.add('right');else if(j===picked)b.classList.add('wrong')});
+  afterAnswer(q,ok,'ABCDEF'[picked]);
+}
+function submitJudge(qid,val){
+  const q=DB.questions.find(x=>x.id===qid);
+  const ok=(val?'T':'F')===q.answer;
+  document.querySelectorAll('.q-opt').forEach(b=>b.style.pointerEvents='none');
+  afterAnswer(q,ok,val?'T':'F');
+}
+function submitFill(qid){
+  const q=DB.questions.find(x=>x.id===qid);
+  const v=document.getElementById('fill-ans').value;
+  const ok=Array.isArray(q.answer)?q.answer.some(a=>normFill(a)===normFill(v)):normFill(q.answer)===normFill(v);
+  document.getElementById('fill-ans').disabled=true;
+  afterAnswer(q,ok,v);
+}
+function nextQ(){
+  if(QZ.cur+1<QZ.ids.length){QZ.cur++;picked=-1;renderQuiz()}
+  else{
+    const total=QZ.ids.length,c=QZ.correct,pct=Math.round(c/total*100);
+    document.getElementById('page-bank').innerHTML=`<div class="card res-banner">
+      <div class="big">${pct}%</div>
+      <div style="font-size:15px;margin:6px 0">${c} / ${total} 题正确</div>
+      <div style="font-size:13px;color:var(--text-l)">${pct>=80?'掌握良好，继续保持':pct>=60?'基本掌握，错题及时复习':'错误较多，建议立即复习错题'}</div>
+    </div>
+    <div class="card"><h3>本次错题</h3>
+      ${DB.records.slice(-total).filter(r=>!r.ok).map(r=>{const q=DB.questions.find(x=>x.id===r.qid);return q?`<div class="k-item" onclick="viewQuestion('${q.id}')"><div class="t">❌ ${esc(q.content.slice(0,40))}</div><div class="m">${q.subject} · 正确答案：${ansText(q)}</div></div>`:''}).join('')||'<div class="empty">🎉 全部答对，无错题</div>'}
+    </div>
+    <button class="btn block" onclick="go('bank')">返回题库</button>
+    <button class="btn ghost block" style="margin-top:10px" onclick="startReview()">复习今日错题</button>`;
+  }
+}
+
+/* ================= 错题复习（SM-2简化） ================= */
+let RV=null;
+function startReview(sj){
+  let pool=dueMistakes();
+  if(sj)pool=pool.filter(m=>{const q=DB.questions.find(x=>x.id===m.qid);return q&&q.subject===sj});
+  if(!pool.length)return toast('没有到期错题');
+  const ids=pool.map(m=>m.qid);
+  RV={ids,cur:0,title:'错题复习'};
+  renderReview();
+}
+function renderReview(){
+  const q=DB.questions.find(x=>x.id===RV.ids[RV.cur]);
+  if(!q){finishReview();return}
+  const m=DB.mistakes[q.id];
+  let body=`<div class="progress-line"><span>🔁 错题复习 · 第 ${m.wrongCount} 次错</span><span>${RV.cur+1} / ${RV.ids.length}</span></div>
+  <div class="bar"><div style="width:${RV.cur/RV.ids.length*100}%"></div></div>
+  <div class="card" style="margin-top:12px">
+    <div style="margin-bottom:8px"><span class="stage st${m.stage}">${STAGE_TXT[m.stage]}</span> <span style="font-size:12px;color:var(--text-l)">${EMOJI[q.subject]} ${q.subject}</span></div>
+    <div class="q-text">${esc(q.content)}</div>
+    ${q.image?`<img class="q-img" src="${q.image}">`:''}`;
+  if(q.type==='choice')body+=q.options.map((o,i)=>`<button class="q-opt" id="opt${i}" onclick="pickOptR(${i})"><span class="k">${'ABCDEF'[i]}</span>${esc(o.replace(/^[A-F][.、．]\s*/,''))}</button>`).join('')+`<button class="btn block" style="margin-top:6px" id="rv-btn" onclick="rvChoice('${q.id}')" disabled>提交</button>`;
+  else if(q.type==='judge')body+=`<div class="grid2"><button class="q-opt" style="text-align:center" onclick="rvJudge('${q.id}',true)">✔ 正确</button><button class="q-opt" style="text-align:center" onclick="rvJudge('${q.id}',false)">✘ 错误</button></div>`;
+  else body+=`<input id="fill-ans" placeholder="输入答案" autocomplete="off"><button class="btn block" style="margin-top:10px" onclick="rvFill('${q.id}')">提交</button>`;
+  body+=`<div id="ana-box"></div></div>`;
+  document.getElementById('page-wrong').innerHTML=body;
+}
+let pickedR=-1;
+function pickOptR(i){pickedR=i;document.querySelectorAll('.q-opt').forEach((b,j)=>b.classList.toggle('sel',j===i));document.getElementById('rv-btn').disabled=false}
+function rvResult(qid,ok){
+  const q=DB.questions.find(x=>x.id===qid);const m=DB.mistakes[qid];
+  DB.records.push({id:uid(),qid,ok,userAns:'',time:Date.now(),dur:0,review:true});
+  if(ok){m.stage=Math.min(4,m.stage+1);m.nextReview=m.stage<4?Date.now()+STAGE_DAYS[m.stage]*864e5:Infinity;toast(`答对，${m.stage<4?STAGE_TXT[m.stage]:'已掌握'}`)}
+  else{m.wrongCount++;m.stage=0;m.nextReview=Date.now();toast('答错，重新进入复习周期')}
+  save();
+  document.getElementById('ana-box').innerHTML=`<div class="ana" style="margin-top:14px"><b style="color:${ok?'var(--green)':'var(--red)'}">${ok?'✔ 答对':'✘ 答错'}</b> · 正确答案：${ansText(q)}${q.analysis?'\n解析：'+esc(q.analysis):''}</div>
+  <button class="btn block" style="margin-top:12px" onclick="nextRV()">下一题 →</button>`;
+}
+function rvChoice(qid){const q=DB.questions.find(x=>x.id===qid);const realRight=q.options.findIndex((o,i)=>('ABCDEF'[i])===q.answer);const ok=pickedR===realRight;document.querySelectorAll('.q-opt').forEach((b,j)=>{b.style.pointerEvents='none';b.classList.remove('sel');if(j===realRight)b.classList.add('right');else if(j===pickedR)b.classList.add('wrong')});rvResult(qid,ok)}
+function rvJudge(qid,val){const q=DB.questions.find(x=>x.id===qid);rvResult(qid,(val?'T':'F')===q.answer)}
+function rvFill(qid){const q=DB.questions.find(x=>x.id===qid);const v=document.getElementById('fill-ans').value;const ok=Array.isArray(q.answer)?q.answer.some(a=>normFill(a)===normFill(v)):normFill(q.answer)===normFill(v);rvResult(qid,ok)}
+function nextRV(){RV.cur++;if(RV.cur<RV.ids.length){pickedR=-1;renderReview()}else finishReview()}
+function finishReview(){
+  document.getElementById('page-wrong').innerHTML=`<div class="card res-banner"><div class="big" style="font-size:56px">🎯</div><div style="font-size:16px;margin-top:8px">本轮复习完成</div><div class="hint">答对的错题已自动推迟到下一轮复习</div></div>
+  <button class="btn block" onclick="go('wrong')">返回错题本</button>`;
+  updBadge();
+}
+
+/* ================= 错题本 ================= */
+function renderWrong(){
+  const ms=Object.values(DB.mistakes).sort((a,b)=>a.nextReview-b.nextReview);
+  const due=dueMistakes().length;
+  document.getElementById('page-wrong').innerHTML=`
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:15px;font-weight:600">待复习 ${due} 题</div><div class="hint">按 1天→3天→7天→30天 间隔重复</div></div>
+    ${due?'<button class="btn" onclick="startReview()">开始复习</button>':''}
+  </div>
+  <div class="filters">${['全部','到期','新错','已掌握'].map((t,i)=>`<span class="chip g ${i===0?'on':''}" onclick="filterWrong(this,'${t}')">${t}</span>`).join('')}</div>
+  <div class="card" id="wrong-list">${wrongListHtml('全部')}</div>`;
+}
+function wrongListHtml(f){
+  let ms=Object.values(DB.mistakes);
+  const t=Date.now();
+  if(f==='到期')ms=ms.filter(m=>m.stage<4&&m.nextReview<=t);
+  else if(f==='新错')ms=ms.filter(m=>m.stage===0);
+  else if(f==='已掌握')ms=ms.filter(m=>m.stage>=4);
+  ms.sort((a,b)=>(a.nextReview)-(b.nextReview));
+  if(!ms.length)return '<div class="empty"><span class="em">🎉</span>没有错题</div>';
+  return ms.map(m=>{const q=DB.questions.find(x=>x.id===m.qid);if(!q)return'';const overdue=m.stage<4&&m.nextReview<=t;
+    return`<div class="mistake-item" onclick="viewQuestion('${q.id}')">
+      <div style="flex:1;min-width:0"><div class="t" style="font-size:14px">${esc(q.content.slice(0,36))}${q.content.length>36?'…':''}</div>
+      <div class="m" style="font-size:12px;color:var(--text-l)">${q.subject} · 错 ${m.wrongCount} 次</div></div>
+      <span class="stage st${m.stage}">${m.stage>=4?'已掌握':overdue?'待复习':STAGE_TXT[m.stage]}</span>
+    </div>`}).join('');
+}
+function filterWrong(el,f){document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('wrong-list').innerHTML=wrongListHtml(f)}
+
+/* ================= 知识点 ================= */
+let studySubject='全部',studyQuery='';
+function renderStudy(){
+  document.getElementById('page-study').innerHTML=`
+  <div class="filters">
+    ${['全部',...SUBJECTS].map(s=>`<span class="chip ${s===studySubject?'on':''}" onclick="studySubject='${s}';renderStudy()">${s}</span>`).join('')}
+  </div>
+  <div class="search-bar"><input placeholder="搜索知识点标题 / 标签" value="${esc(studyQuery)}" oninput="studyQuery=this.value;renderStudyList()"></div>
+  <button class="btn block" onclick="editKnowledge()">+ 添加知识点</button>
+  <div class="card" style="margin-top:12px" id="k-list">${kListHtml()}</div>`;
+}
+function kListHtml(){
+  let ks=DB.knowledge;
+  if(studySubject!=='全部')ks=ks.filter(k=>k.subject===studySubject);
+  if(studyQuery){const q=studyQuery.toLowerCase();ks=ks.filter(k=>k.title.toLowerCase().includes(q)||k.content.toLowerCase().includes(q)||k.tags.some(t=>t.toLowerCase().includes(q)))}
+  if(!ks.length)return'<div class="empty"><span class="em">📚</span>暂无知识点</div>';
+  return ks.map(k=>`<div class="k-item" onclick="viewKnowledge('${k.id}')"><div class="t">${EMOJI[k.subject]} ${esc(k.title)}</div><div class="m">${k.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div></div>`).join('');
+}
+function renderStudyList(){document.getElementById('k-list').innerHTML=kListHtml()}
+function viewKnowledge(id){
+  const k=DB.knowledge.find(x=>x.id===id);if(!k)return;
+  openModal(`<h3>${EMOJI[k.subject]} ${esc(k.title)}</h3>
+    <div style="margin-bottom:10px">${k.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+    <div class="q-text" style="white-space:pre-wrap;background:#f8f9fb;border-radius:8px;padding:12px">${esc(k.content)}</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn small ghost" onclick="editKnowledge('${k.id}')">编辑</button>
+      <button class="btn small red" onclick="delKnowledge('${k.id}')">删除</button>
+      <button class="btn small" style="flex:1" onclick="closeModal()">关闭</button>
+    </div>`);
+}
+let kEditImg='';
+function editKnowledge(id){
+  const k=id?DB.knowledge.find(x=>x.id===id):null;
+  kEditImg=k?k.image||'':'';
+  openModal(`<h3>${k?'编辑':'添加'}知识点</h3>
+    <label>科目</label><select id="k-subj">${SUBJECTS.map(s=>`<option ${k&&k.subject===s?'selected':''}>${s}</option>`).join('')}</select>
+    <label>标题</label><input id="k-title" value="${k?esc(k.title):''}" placeholder="如：函数单调性">
+    <label>内容</label><textarea id="k-content" placeholder="概念、公式、方法…">${k?esc(k.content):''}</textarea>
+    <label>标签（逗号分隔）</label><input id="k-tags" value="${k?esc(k.tags.join(',')):''}" placeholder="必考,易错">
+    <label>配图（可选）</label><input type="file" accept="image/*" onchange="kImgChange(this)">
+    ${kEditImg?`<img src="${kEditImg}" style="max-width:100%;border-radius:8px;margin-top:6px">`:''}
+    <div class="row" style="margin-top:14px"><button class="btn" style="flex:1" onclick="saveKnowledge('${id||''}')">保存</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+}
+function kImgChange(inp){if(inp.files[0])imgCompress(inp.files[0],d=>{kEditImg=d;toast('图片已添加')})}
+function saveKnowledge(id){
+  const subject=document.getElementById('k-subj').value,title=document.getElementById('k-title').value.trim(),content=document.getElementById('k-content').value.trim();
+  if(!title||!content)return toast('标题和内容必填');
+  const tags=document.getElementById('k-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+  if(id){const k=DB.knowledge.find(x=>x.id===id);Object.assign(k,{subject,title,content,tags,image:kEditImg})}
+  else DB.knowledge.push({id:uid(),subject,title,content,tags,image:kEditImg,created:Date.now()});
+  save();closeModal();renderStudy();toast('已保存');
+}
+function delKnowledge(id){if(!confirm('删除该知识点？'))return;DB.knowledge=DB.knowledge.filter(k=>k.id!==id);save();closeModal();renderStudy()}
+
+/* ================= 我的（题目管理 / 统计 / 数据） ================= */
+function renderMe(){
+  const total=DB.records.length,corr=DB.records.filter(r=>r.ok).length;
+  const week=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5);return{label:(d.getMonth()+1)+'/'+d.getDate(),count:DB.records.filter(r=>todayStr(r.time)===todayStr(d)).length}});
+  const maxW=Math.max(...week.map(w=>w.count),1);
+  document.getElementById('page-me').innerHTML=`
+  <div class="card"><h3>数据统计</h3>
+    <div class="grid3" style="margin-bottom:14px">
+      <div class="stat-box"><div class="num">${total}</div><div class="lbl">总做题</div></div>
+      <div class="stat-box"><div class="num">${total?Math.round(corr/total*100):0}%</div><div class="lbl">正确率</div></div>
+      <div class="stat-box"><div class="num">${Object.keys(DB.mistakes).length}</div><div class="lbl">错题数</div></div>
+    </div>
+    <div class="date-group">近 7 天做题量</div>
+    ${week.map(w=>`<div class="stat-bar-row"><span class="nm">${w.label}</span><div class="bar" style="flex:1"><div style="width:${w.count/maxW*100}%"></div></div><span class="pc">${w.count}</span></div>`).join('')}
+    <div class="divider"></div>
+    <div class="date-group">各科正确率</div>
+    ${SUBJECTS.map(s=>{const st=subjectStats(s);return`<div class="stat-bar-row"><span class="nm">${s}</span><div class="bar ${st&&st.correct/st.total>=0.8?'g':''}" style="flex:1"><div style="width:${st?Math.round(st.correct/st.total*100):0}%"></div></div><span class="pc">${st?st.total:0}题</span></div>`}).join('')}
+  </div>
+  <div class="card"><h3>题目管理</h3>
+    <button class="btn block" onclick="editQuestion()">+ 添加题目</button>
+    <div class="hint" style="margin-bottom:8px">已录入 ${DB.questions.length} 题</div>
+  </div>
+  <div class="card"><h3>数据备份</h3>
+    <div class="row">
+      <button class="btn ghost small" onclick="exportData()">导出备份</button>
+      <button class="btn ghost small" onclick="document.getElementById('import-file').click()">导入备份</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+    </div>
+    <div class="hint">建议定期导出备份，换设备时导入恢复</div>
+  </div>
+  <div class="footer-note">研学本 v1.0 · 数据仅存储在本机浏览器</div>`;
+}
+let qEditImg='';
+function editQuestion(id){
+  const q=id?DB.questions.find(x=>x.id===id):null;
+  qEditImg=q?q.image||'':'';
+  openModal(`<h3>${q?'编辑':'添加'}题目</h3>
+    <label>科目</label><select id="q-subj">${SUBJECTS.map(s=>`<option ${q&&q.subject===s?'selected':''}>${s}</option>`).join('')}</select>
+    <label>题型</label><select id="q-type" onchange="qTypeChange()">
+      <option value="choice" ${q&&q.type==='choice'?'selected':''}>单选题</option>
+      <option value="fill" ${q&&q.type==='fill'?'selected':''}>填空题</option>
+      <option value="judge" ${q&&q.type==='judge'?'selected':''}>判断题</option></select>
+    <label>题干</label><textarea id="q-content" placeholder="题目内容">${q?esc(q.content):''}</textarea>
+    <label>配图（可选）</label><input type="file" accept="image/*" onchange="qImgChange(this)">
+    ${qEditImg?`<img src="${qEditImg}" style="max-width:100%;border-radius:8px;margin-top:6px">`:''}
+    <div id="q-opts-area"></div>
+    <label>标签（逗号分隔）</label><input id="q-tags" value="${q?esc(q.tags.join(',')):''}" placeholder="必考,易错">
+    <label>难度（1-5）</label><input type="number" id="q-diff" min="1" max="5" value="${q?q.difficulty:3}">
+    <label>解析</label><textarea id="q-analysis" placeholder="解题思路">${q?esc(q.analysis):''}</textarea>
+    <div class="row" style="margin-top:14px"><button class="btn" style="flex:1" onclick="saveQuestion('${id||''}')">保存</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+  qTypeChange(q);
+}
+function qTypeChange(q){
+  const t=document.getElementById('q-type').value;const area=document.getElementById('q-opts-area');
+  if(t==='choice'){
+    area.innerHTML=`<label>选项（每行一个，正确答案行首加 *）</label><textarea id="q-options" style="min-height:110px" placeholder="*正确选项前面加星号&#10;选项A&#10;*选项B&#10;选项C&#10;选项D">${q?esc(q.options.map((o,i)=>('ABCDEF'[i]===q.answer?'*':'')+o).join('\n')):''}</textarea>`;
+  }else if(t==='fill'){
+    area.innerHTML=`<label>答案（多个可接受答案用 / 分隔）</label><input id="q-answer" value="${q?esc(Array.isArray(q.answer)?q.answer.join('/'):q.answer):''}" placeholder="如：苏打/纯碱">`;
+  }else{
+    area.innerHTML=`<label>正确答案</label><select id="q-answer"><option value="T" ${q&&q.answer==='T'?'selected':''}>正确</option><option value="F" ${q&&q.answer==='F'?'selected':''}>错误</option></select>`;
+  }
+}
+function qImgChange(inp){if(inp.files[0])imgCompress(inp.files[0],d=>{qEditImg=d;toast('图片已添加')})}
+function saveQuestion(id){
+  const subject=document.getElementById('q-subj').value,type=document.getElementById('q-type').value,content=document.getElementById('q-content').value.trim();
+  if(!content)return toast('题干必填');
+  let options=[],answer;
+  if(type==='choice'){
+    const lines=document.getElementById('q-options').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const ri=lines.findIndex(l=>l.startsWith('*'));
+    if(lines.length<2||ri<0)return toast('至少2个选项，且一个加*为答案');
+    options=lines.map(l=>l.startsWith('*')?l.slice(1):l);answer='ABCDEF'[ri];
+  }else if(type==='fill'){
+    answer=document.getElementById('q-answer').value.trim();if(!answer)return toast('答案必填');
+    answer=answer.split('/').map(s=>s.trim()).filter(Boolean);if(answer.length===1)answer=answer[0];
+  }else{answer=document.getElementById('q-answer').value}
+  const tags=document.getElementById('q-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+  const difficulty=parseInt(document.getElementById('q-diff').value)||3;
+  const analysis=document.getElementById('q-analysis').value.trim();
+  if(id){const q=DB.questions.find(x=>x.id===id);Object.assign(q,{subject,type,content,options,answer,tags,difficulty,analysis,image:qEditImg})}
+  else DB.questions.push({id:uid(),subject,type,content,options,answer,tags,difficulty,analysis,image:qEditImg,created:Date.now()});
+  save();closeModal();renderMe();toast('已保存');
+}
+function viewQuestion(id){
+  const q=DB.questions.find(x=>x.id===id);if(!q)return;
+  let ans='';
+  if(q.type==='choice')ans=q.options.map((o,i)=>`<div style="padding:6px 0;${'ABCDEF'[i]===q.answer?'color:var(--green);font-weight:600':''}">${'ABCDEF'[i]}. ${esc(o)}${'ABCDEF'[i]===q.answer?' ✔':''}</div>`).join('');
+  else ans=`<div>答案：${esc(ansText(q))}</div>`;
+  openModal(`<h3>${typeIcon(q.type)} ${q.subject}题目</h3>
+    <div class="q-text">${esc(q.content)}</div>
+    ${q.image?`<img class="q-img" src="${q.image}">`:''}
+    ${ans}
+    ${q.analysis?`<div class="ana">解析：${esc(q.analysis)}</div>`:''}
+    <div class="row" style="margin-top:14px">
+      <button class="btn small ghost" onclick="editQuestion('${q.id}')">编辑</button>
+      <button class="btn small red" onclick="delQuestion('${q.id}')">删除</button>
+      <button class="btn small" style="flex:1" onclick="closeModal()">关闭</button>
+    </div>`);
+}
+function delQuestion(id){if(!confirm('删除该题目？'))return;DB.questions=DB.questions.filter(q=>q.id!==id);delete DB.mistakes[id];DB.records=DB.records.filter(r=>r.qid!==id);save();closeModal();go('me');toast('已删除')}
+
+/* ================= 数据导入导出 ================= */
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='study-backup-'+todayStr()+'.json';a.click();
+  toast('备份文件已下载');
+}
+function importData(inp){
+  const f=inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.questions||!d.knowledge)throw 0;DB=d;save();toast('导入成功');go('home')}catch(_){toast('文件格式不正确')}};
+  rd.readAsText(f);
+}
+
+/* ================= 启动 ================= */
+load();if(!DB)seed();
+go('home');
+</script>
+</body>
+</html>
