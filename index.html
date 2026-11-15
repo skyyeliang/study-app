@@ -191,7 +191,7 @@ function normFill(s){return String(s).trim().replace(/\s+/g,'').replace(/[()（�
 function fmtDate(ts){const d=new Date(ts);return (d.getMonth()+1)+'/'+d.getDate()}
 function dueMistakes(){const t=Date.now();return Object.values(DB.mistakes).filter(m=>m.stage<4&&m.nextReview<=t)}
 function subjectStats(sj){const rs=DB.records.filter(r=>{const q=DB.questions.find(x=>x.id===r.qid);return q&&q.subject===sj});if(!rs.length)return null;return{total:rs.length,correct:rs.filter(r=>r.ok).length}}
-function imgCompress(file,cb){const img=new Image();const rd=new FileReader();rd.onload=e=>{img.onload=()=>{const max=800;let w=img.width,h=img.height;if(w>max){h=h*max/w;w=max}if(h>max){w=w*max/h;h=max}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',0.7))};img.src=e.target.result};rd.readAsDataURL(file)}
+function imgCompress(file,cb,maxSide=800,quality=0.7){const img=new Image();const rd=new FileReader();rd.onload=e=>{img.onload=()=>{const max=maxSide;let w=img.width,h=img.height;if(w>max){h=h*max/w;w=max}if(h>max){w=w*max/h;h=max}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',quality))};img.src=e.target.result};rd.readAsDataURL(file)}
 
 /* ================= 路由 ================= */
 const PAGES={home:'首页',bank:'做题',study:'知识点',wrong:'错题本',me:'我的'};
@@ -534,6 +534,7 @@ function renderMe(){
   </div>
   <div class="card"><h3>AI 出题助手</h3>
     <button class="btn block" style="background:#6b21a8" onclick="aiGenModal()">✨ AI 出题（配豆包等 AI 使用）</button>
+    <button class="btn block" onclick="aiSettingModal()">📷 AI 识别设置<span style="float:right;font-size:12px;opacity:.8">${localStorage.getItem('studyApp_sfkey')?'已配置 ✓':'未配置'}</span></button>
     <div class="hint">生成提示词 → 复制去问 AI → 把回答粘回来，自动导入题库</div>
   </div>
   <div class="card"><h3>数据备份</h3>
@@ -634,6 +635,46 @@ function importData(inp){
 }
 
 /* ================= AI 出题助手 ================= */
+const SF_MODEL_DEFAULT='THUDM/GLM-4.1V-9B-Thinking';
+function sfKey(){return localStorage.getItem('studyApp_sfkey')||''}
+function sfModel(){return localStorage.getItem('studyApp_sfmodel')||SF_MODEL_DEFAULT}
+function aiSettingModal(){
+  openModal(`<h3>📷 AI 识别设置</h3>
+    <div class="hint" style="line-height:1.7;margin-bottom:10px">拍照直接识别错题需要一个<b>硅基流动</b>的免费 API Key，一次性配置：<br>1. 浏览器打开 <b>cloud.siliconflow.cn</b> 注册（手机号即可，送免费额度）<br>2. 左侧菜单「API密钥」→ 新建密钥<br>3. 复制 <code style="background:#eee;padding:1px 4px;border-radius:4px">sk-</code> 开头的那串，粘贴到下面</div>
+    <label>API Key</label><input id="sf-key" value="${sfKey()}" placeholder="sk-xxxxxxxxxxxx">
+    <label>识别模型</label><input id="sf-model" value="${sfModel()}">
+    <div class="hint" style="margin-top:6px">默认模型（GLM-4.1V-9B）免费够用。识别手写/复杂公式不准时，可改为 <code style="background:#eee;padding:1px 4px;border-radius:4px">Qwen/Qwen2.5-VL-72B-Instruct</code>（更强，消耗赠送额度）</div>
+    <div class="row" style="margin-top:14px"><button class="btn" style="flex:1" onclick="saveAISetting()">保存</button>${sfKey()?'<button class="btn red" onclick="clearAISetting()">清除</button>':''}<button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+}
+function saveAISetting(){
+  const k=document.getElementById('sf-key').value.trim();
+  localStorage.setItem('studyApp_sfkey',k);
+  localStorage.setItem('studyApp_sfmodel',document.getElementById('sf-model').value.trim()||SF_MODEL_DEFAULT);
+  closeModal();toast(k?'已保存，可以去拍照识别了':'已保存（未填 Key 时拍照识别不可用）');go('me');
+}
+function clearAISetting(){localStorage.removeItem('studyApp_sfkey');localStorage.removeItem('studyApp_sfmodel');closeModal();toast('已清除');go('me')}
+/* 拍照/相册识别：压缩→base64→硅基流动 VL 模型→块格式文本 */
+async function aiRecognize(fileList){
+  const inp=fileList&&fileList[0];if(!inp)return;
+  if(!sfKey()){toast('请先配置 API Key');aiSettingModal();return}
+  const files=Array.from(fileList).slice(0,3);
+  toast('正在识别 '+files.length+' 张图片，请稍候…');
+  try{
+    const imgs=[];
+    for(const f of files){imgs.push(await new Promise(res=>imgCompress(f,res,1400,0.85)))}
+    const subj=document.getElementById('ai-rec-subj')?document.getElementById('ai-rec-subj').value:'数学';
+    const prompt='你是错题整理助手。请识别图片中的错题（共'+imgs.length+'张），整理成下面的简单格式，一题一块，不要输出任何其他说明文字：\n\n【题】题干内容（必填）\n【选】A. 选项一 B. 选项二 C. 选项三 D. 选项四（选择题必填）\n【答】B（选择题填字母；填空题填答案，多个可接受答案用/分隔；判断题填 对 或 错；解答题可省略）\n【析】详细解析和完整解题过程\n【型】解答（可选，有此标记按解答题处理）\n【标】知识点标签，逗号分隔\n\n要求：\n1. 准确识别题干、选项；\n2. 没有解析的题，自己写出完整解题过程；\n3. 科目为'+subj+'；\n4. 多道题就连续输出多块，每题以【题】开头。';
+    const content=[{type:'text',text:prompt},...imgs.map(url=>({type:'image_url',image_url:{url}}))];
+    const r=await fetch('https://api.siliconflow.cn/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sfKey()},body:JSON.stringify({model:sfModel(),messages:[{role:'user',content}],max_tokens:3000})});
+    const d=await r.json();
+    if(!r.ok){toast('识别失败：'+(d.message||('HTTP '+r.status)));return}
+    const txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;
+    if(!txt){toast('识别失败：模型无返回');return}
+    const ansEl=document.getElementById('ai-answer');
+    if(ansEl){ansEl.value=txt;document.getElementById('ai-step2').style.display='block';toast('识别完成，检查无误后点「解析并导入题库」')}
+  }catch(e){toast('网络错误：'+e.message)}
+}
+
 function aiGenModal(){
   openModal(`<h3>✨ AI 出题助手</h3>
     <div class="seg" id="ai-mode-seg"><button class="on" onclick="aiMode(this,'gen')">AI 出题</button><button onclick="aiMode(this,'rec')">AI 录错题</button></div>
@@ -646,6 +687,9 @@ function aiGenModal(){
     </div>
     <div id="ai-rec-area" style="display:none">
     <label>科目</label><select id="ai-rec-subj">${SUBJECTS.map(s=>`<option>${s}</option>`).join('')}</select>
+    <div class="grid2" style="margin:10px 0 12px"><button class="btn" style="background:#6b21a8" onclick="document.getElementById('cam-inp').click()">📷 拍照识别</button><button class="btn" onclick="document.getElementById('gal-inp').click()">🖼 相册选图</button></div>
+    <input type="file" id="cam-inp" accept="image/*" capture="environment" style="display:none" onchange="aiRecognize(this.files);this.value=''">
+    <input type="file" id="gal-inp" accept="image/*" multiple style="display:none" onchange="aiRecognize(this.files);this.value=''">
     <label>粘贴错题内容（或留空，直接把提示词连同错题照片发给 AI）</label>
     <textarea id="ai-rec-text" style="min-height:100px" placeholder="把错题文字粘贴到这里。如果是照片，留空即可——生成提示词后，打开豆包把提示词和错题照片一起发过去。"></textarea>
     </div>
