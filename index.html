@@ -513,6 +513,10 @@ function renderMe(){
     <button class="btn block" onclick="editQuestion()">+ 添加题目</button>
     <div class="hint" style="margin-bottom:8px">已录入 ${DB.questions.length} 题</div>
   </div>
+  <div class="card"><h3>AI 出题助手</h3>
+    <button class="btn block" style="background:#6b21a8" onclick="aiGenModal()">✨ AI 出题（配豆包等 AI 使用）</button>
+    <div class="hint">生成提示词 → 复制去问 AI → 把回答粘回来，自动导入题库</div>
+  </div>
   <div class="card"><h3>数据备份</h3>
     <div class="row">
       <button class="btn ghost small" onclick="exportData()">导出备份</button>
@@ -603,6 +607,85 @@ function importData(inp){
   const rd=new FileReader();
   rd.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.questions||!d.knowledge)throw 0;DB=d;save();toast('导入成功');go('home')}catch(_){toast('文件格式不正确')}};
   rd.readAsText(f);
+}
+
+/* ================= AI 出题助手 ================= */
+function aiGenModal(){
+  openModal(`<h3>✨ AI 出题助手</h3>
+    <label>科目</label><select id="ai-subj">${SUBJECTS.map(s=>`<option>${s}</option>`).join('')}</select>
+    <label>范围 / 知识点</label><input id="ai-scope" placeholder="如：三角函数 / 牛顿运动定律 / 定语从句">
+    <label>题型</label><select id="ai-type"><option value="choice">单选题</option><option value="fill">填空题</option><option value="judge">判断题</option><option value="mix">混合</option></select>
+    <label>数量</label><input type="number" id="ai-n" value="10" min="1" max="30">
+    <label>难度（1-5，3 为中等）</label><input type="number" id="ai-diff" value="3" min="1" max="5">
+    <div class="row" style="margin-top:14px"><button class="btn" style="flex:1;background:#6b21a8" onclick="genPrompt()">生成提示词</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>
+    <div id="ai-step2" style="display:none">
+      <div class="divider"></div>
+      <label>第 1 步：复制提示词，发给豆包 / Kimi / 文心等任意 AI</label>
+      <textarea id="ai-prompt" style="min-height:140px;font-size:13px"></textarea>
+      <button class="btn small block" style="margin-top:8px" onclick="copyPrompt()">📋 复制提示词</button>
+      <label style="margin-top:14px">第 2 步：把 AI 的完整回答粘贴到下面</label>
+      <textarea id="ai-answer" style="min-height:120px;font-size:13px" placeholder="把 AI 的回答原样粘贴到这里（支持带 markdown 代码块）"></textarea>
+      <button class="btn block" style="margin-top:10px;background:#6b21a8" onclick="importAI()">解析并导入题库</button>
+      <div id="ai-result" class="hint"></div>
+    </div>`);
+}
+const AI_TYPE_TXT={choice:'单选题',fill:'填空题',judge:'判断题',mix:'混合题型（选择为主，搭配填空和判断）'};
+function genPrompt(){
+  const sj=document.getElementById('ai-subj').value,scope=document.getElementById('ai-scope').value.trim()||'本学期重点内容';
+  const tp=document.getElementById('ai-type').value,n=document.getElementById('ai-n').value,diff=document.getElementById('ai-diff').value;
+  const prompt=`你是一位上海高中${sj}命题老师，熟悉沪教版教材和高考考点。请针对【${scope}】出 ${n} 道${AI_TYPE_TXT[tp]}，难度 ${diff}/5。\n\n要求：\n1. 考点准确，不超纲，题目表述清晰无歧义\n2. 每道题附详细解析，说明考点和易错点\n3. 严格按下面的 JSON 数组格式输出，不要输出任何 JSON 以外的内容：\n\n[\n  {\n    "type": "choice",\n    "content": "题干文字",\n    "options": ["选项A","选项B","选项C","选项D"],\n    "answer": "B",\n    "analysis": "详细解析",\n    "tags": ["${scope}"],\n    "difficulty": ${diff}\n  },\n  {\n    "type": "fill",\n    "content": "题干，空缺用____表示",\n    "options": [],\n    "answer": "标准答案",\n    "analysis": "详细解析",\n    "tags": ["${scope}"],\n    "difficulty": ${diff}\n  },\n  {\n    "type": "judge",\n    "content": "判断题干",\n    "options": [],\n    "answer": "T",\n    "analysis": "详细解析，指出错误的话给出正确说法",\n    "tags": ["${scope}"],\n    "difficulty": ${diff}\n  }\n]\n\n说明：type 取值 choice/fill/judge；choice 的 answer 是正确选项字母；fill 的 answer 是字符串（多个可接受答案用 / 分隔）；judge 的 answer 填 T（正确）或 F（错误）。`;
+  document.getElementById('ai-prompt').value=prompt;
+  document.getElementById('ai-step2').style.display='block';
+}
+function copyPrompt(){
+  const ta=document.getElementById('ai-prompt');ta.select();
+  if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>toast('已复制，去粘贴给 AI'))}
+  else{document.execCommand('copy');toast('已复制')}
+}
+function importAI(){
+  const raw=document.getElementById('ai-answer').value;
+  if(!raw.trim())return toast('请先粘贴 AI 的回答');
+  let jsonStr=raw;
+  const m=raw.match(/```(?:json)?\s*([\s\S]*?)\u0060``/);
+  if(m)jsonStr=m[1];
+  else{const a=raw.indexOf('['),b=raw.lastIndexOf(']');if(a>=0&&b>a)jsonStr=raw.slice(a,b+1)}
+  let arr;
+  try{arr=JSON.parse(jsonStr)}catch(_){return toast('解析失败：回答不是有效 JSON，检查是否复制完整')}
+  if(!Array.isArray(arr))return toast('解析失败：需要 JSON 数组');
+  let ok=0,fail=0;const errs=[];
+  arr.forEach((it,i)=>{
+    try{
+      let type=String(it.type||'').toLowerCase();
+      if(['choice','单选'].includes(type))type='choice';else if(['fill','填空'].includes(type))type='fill';else if(['judge','判断'].includes(type))type='judge';
+      if(!['choice','fill','judge'].includes(type))throw'未知题型:'+it.type;
+      const content=String(it.content||'').trim();if(!content)throw'缺题干';
+      const subject=document.getElementById('ai-subj').value;
+      let options=[],answer;
+      if(type==='choice'){
+        options=(it.options||[]).map(o=>String(o).replace(/^[A-F][.、．]\s*/,''));
+        if(options.length<2)throw'选择题至少需要2个选项';
+        answer=String(it.answer||'').trim().toUpperCase();
+        if(!/^[A-F]$/.test(answer)||'ABCDEF'.indexOf(answer)>=options.length)throw'答案字母无效';
+      }else if(type==='fill'){
+        let a=it.answer;
+        if(Array.isArray(a))a=a.join('/');
+        answer=String(a||'').trim();if(!answer)throw'填空题缺答案';
+        if(answer.includes('/'))answer=answer.split('/').map(s=>s.trim()).filter(Boolean);
+      }else{
+        let a=String(it.answer||'').trim().toUpperCase();
+        if(['T','TRUE','正确','对','√'].includes(a))answer='T';
+        else if(['F','FALSE','错误','错','×'].includes(a))answer='F';
+        else throw'判断题答案需为 T 或 F';
+      }
+      const tags=Array.isArray(it.tags)?it.tags.map(String):String(it.tags||'').split(/[,，]/);
+      const difficulty=Math.min(5,Math.max(1,parseInt(it.difficulty)||3));
+      DB.questions.push({id:uid(),subject,type,content,options,answer,tags:tags.map(s=>s.trim()).filter(Boolean),difficulty,analysis:String(it.analysis||''),image:'',created:Date.now()});
+      ok++;
+    }catch(e){fail++;errs.push(`第${i+1}题：${e}`)}
+  });
+  save();
+  document.getElementById('ai-result').innerHTML=`导入完成：成功 <b>${ok}</b> 题${fail?'，跳过 <b style="color:var(--red)">'+fail+'</b> 题（'+errs.slice(0,3).map(esc).join('；')+'）':''}`;
+  if(ok){toast(`成功导入 ${ok} 题`);updBadge()}
 }
 
 /* ================= 启动 ================= */
