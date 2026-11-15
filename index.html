@@ -534,7 +534,7 @@ function renderMe(){
   </div>
   <div class="card"><h3>AI 出题助手</h3>
     <button class="btn block" style="background:#6b21a8" onclick="aiGenModal()">✨ AI 出题（配豆包等 AI 使用）</button>
-    <button class="btn block" onclick="aiSettingModal()">📷 AI 识别设置<span style="float:right;font-size:12px;opacity:.8">${localStorage.getItem('studyApp_sfkey')?'已配置 ✓':'未配置'}</span></button>
+    <button class="btn block" onclick="aiSettingModal()">📷 AI 识别设置<span style="float:right;font-size:12px;opacity:.8">${aiProvider()==='ark'?'豆包':(sfKey()?'硅基流动':'未配置')}</span></button>
     <div class="hint">生成提示词 → 复制去问 AI → 把回答粘回来，自动导入题库</div>
   </div>
   <div class="card"><h3>数据备份</h3>
@@ -639,25 +639,56 @@ const SF_MODEL_DEFAULT='Qwen/Qwen2.5-VL-72B-Instruct';
 const SF_FALLBACKS=['THUDM/GLM-4.1V-9B-Thinking'];
 function sfKey(){return localStorage.getItem('studyApp_sfkey')||''}
 function sfModel(){const m=localStorage.getItem('studyApp_sfmodel');return (!m||m==='THUDM/GLM-4.1V-9B-Thinking')?SF_MODEL_DEFAULT:m}
-function aiSettingModal(){
-  openModal(`<h3>📷 AI 识别设置</h3>
-    <div class="hint" style="line-height:1.7;margin-bottom:10px">拍照直接识别错题需要一个<b>硅基流动</b>的 API Key，一次性配置：<br>1. 浏览器打开 <b>cloud.siliconflow.cn</b> 注册（手机号即可，送 2000 万 Token 额度）<br>2. 左侧菜单「API密钥」→ 新建密钥<br>3. 复制 <code style="background:#eee;padding:1px 4px;border-radius:4px">sk-</code> 开头的那串，粘贴到下面</div>
+function aiProvider(){return localStorage.getItem('studyApp_provider')||'sf'}
+function arkKey(){return localStorage.getItem('studyApp_arkkey')||''}
+function arkModel(){return localStorage.getItem('studyApp_arkmodel')||''}
+function anyKey(){return !!(sfKey()||arkKey())}
+function providerBody(p){
+  if(p==='ark')return `
+    <div class="hint" style="line-height:1.7;margin-bottom:10px">用<b>豆包（火山方舟）</b>识别，需火山引擎账号 + 实名认证：<br>1. 打开 <b>console.volcengine.com/ark</b> 注册并实名<br>2. 左侧「API Key 管理」新建并复制 Key<br>3. 「模型广场」找<b>视觉理解</b>模型（如 Doubao-Seed-Vision），开通后复制<b>模型 ID</b>（或创建接入点复制 <code style="background:#eee;padding:1px 4px;border-radius:4px">ep-</code> 开头 ID）</div>
+    <label>API Key</label><input id="ark-key" value="${arkKey()}" placeholder="火山方舟 API Key">
+    <label>模型 / 接入点 ID</label><input id="ark-model" value="${arkModel()}" placeholder="模型ID 或 ep-xxxx">
+    <div class="hint" style="margin-top:6px">新用户每款模型赠 50 万 Token（30 天）。视觉模型约 ¥0.02-0.06/百万 Token，拍一张约 ¥0.005，极便宜。</div>`;
+  return `
+    <div class="hint" style="line-height:1.7;margin-bottom:10px">用<b>硅基流动</b>识别，一次性配置：<br>1. 打开 <b>cloud.siliconflow.cn</b> 注册（手机号即可，送 2000 万 Token 额度）<br>2. 左侧「API密钥」→ 新建密钥<br>3. 复制 <code style="background:#eee;padding:1px 4px;border-radius:4px">sk-</code> 开头的那串，粘贴到下面</div>
     <label>API Key</label><input id="sf-key" value="${sfKey()}" placeholder="sk-xxxxxxxxxxxx">
     <label>识别模型</label><input id="sf-model" value="${sfModel()}">
-    <div class="hint" style="margin-top:6px">默认模型识别最准，走赠送额度：一次拍照识别约消耗 3 千 Token（¥0.01 左右），2000 万额度够识别<b>几千张</b>。识别失败会自动换备选模型重试。</div>
-    <div class="row" style="margin-top:14px"><button class="btn" style="flex:1" onclick="saveAISetting()">保存</button>${sfKey()?'<button class="btn red" onclick="clearAISetting()">清除</button>':''}<button class="btn ghost" onclick="closeModal()">取消</button></div>`);
+    <div class="hint" style="margin-top:6px">默认模型识别最准，走赠送额度：一次拍照识别约 ¥0.01。识别失败会自动换备选模型重试。</div>`;
+}
+function setProviderUI(p){
+  document.getElementById('pv-sf').className='btn'+(p==='sf'?'':' ghost');
+  document.getElementById('pv-ark').className='btn'+(p==='ark'?'':' ghost');
+  document.getElementById('pv-body').innerHTML=providerBody(p);
+}
+function aiSettingModal(){
+  const p=aiProvider();
+  openModal(`<h3>📷 AI 识别设置</h3>
+    <label>识别服务商</label>
+    <div class="grid2" style="margin:8px 0 12px"><button id="pv-sf" class="btn${p==='sf'?'':' ghost'}" onclick="setProviderUI('sf')">硅基流动</button><button id="pv-ark" class="btn${p==='ark'?'':' ghost'}" onclick="setProviderUI('ark')">豆包·火山方舟</button></div>
+    <div id="pv-body">${providerBody(p)}</div>
+    <div class="row" style="margin-top:14px"><button class="btn" style="flex:1" onclick="saveAISetting()">保存</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`);
 }
 function saveAISetting(){
+  const isArk=!!document.getElementById('ark-key');
+  localStorage.setItem('studyApp_provider',isArk?'ark':'sf');
+  if(isArk){
+    const k=document.getElementById('ark-key').value.trim(),m=document.getElementById('ark-model').value.trim();
+    localStorage.setItem('studyApp_arkkey',k);localStorage.setItem('studyApp_arkmodel',m);
+    closeModal();toast(k&&m?'已保存豆包识别，可以去拍照了':(k?'已保存，但模型 ID 还没填，识别会失败':'已保存（未填 Key 时拍照识别不可用）'));go('me');return;
+  }
   const k=document.getElementById('sf-key').value.trim();
   localStorage.setItem('studyApp_sfkey',k);
   localStorage.setItem('studyApp_sfmodel',document.getElementById('sf-model').value.trim()||SF_MODEL_DEFAULT);
   closeModal();toast(k?'已保存，可以去拍照识别了':'已保存（未填 Key 时拍照识别不可用）');go('me');
 }
-function clearAISetting(){localStorage.removeItem('studyApp_sfkey');localStorage.removeItem('studyApp_sfmodel');closeModal();toast('已清除');go('me')}
-/* 拍照/相册识别：压缩→base64→硅基流动 VL 模型→块格式文本 */
+function clearAISetting(){['studyApp_sfkey','studyApp_sfmodel','studyApp_arkkey','studyApp_arkmodel','studyApp_provider'].forEach(k=>localStorage.removeItem(k));closeModal();toast('已清除');go('me')}
+/* 拍照/相册识别：压缩→base64→视觉模型→块格式文本 */
 async function aiRecognize(fileList){
   const inp=fileList&&fileList[0];if(!inp)return;
-  if(!sfKey()){toast('请先配置 API Key');aiSettingModal();return}
+  const isArk=aiProvider()==='ark';
+  if(isArk&&!arkKey()){toast('请先在「我的→AI识别设置」选豆包并填 API Key');aiSettingModal();return}
+  if(isArk&&!arkModel()){toast('豆包识别还需填「模型/接入点 ID」，请在设置里补上');aiSettingModal();return}
+  if(!isArk&&!sfKey()){toast('请先在「我的→AI识别设置」配置 API Key');aiSettingModal();return}
   const files=Array.from(fileList).slice(0,3);
   toast('正在识别 '+files.length+' 张图片，请稍候…');
   try{
@@ -666,13 +697,22 @@ async function aiRecognize(fileList){
     const subj=document.getElementById('ai-rec-subj')?document.getElementById('ai-rec-subj').value:'数学';
     const prompt='你是错题整理助手。请识别图片中的错题（共'+imgs.length+'张），整理成下面的简单格式，一题一块，不要输出任何其他说明文字：\n\n【题】题干内容（必填）\n【选】A. 选项一 B. 选项二 C. 选项三 D. 选项四（选择题必填）\n【答】B（选择题填字母；填空题填答案，多个可接受答案用/分隔；判断题填 对 或 错；解答题可省略）\n【析】详细解析和完整解题过程\n【型】解答（可选，有此标记按解答题处理）\n【标】知识点标签，逗号分隔\n\n要求：\n1. 准确识别题干、选项；\n2. 没有解析的题，自己写出完整解题过程；\n3. 科目为'+subj+'；\n4. 多道题就连续输出多块，每题以【题】开头。';
     const content=[{type:'text',text:prompt},...imgs.map(url=>({type:'image_url',image_url:{url}}))];
-    const candidates=[sfModel(),...SF_FALLBACKS.filter(m=>m!==sfModel())];
+    let url,headers,candidates;
+    if(isArk){
+      url='https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+      headers={'Content-Type':'application/json','Authorization':'Bearer '+arkKey()};
+      candidates=[arkModel()];
+    }else{
+      url='https://api.siliconflow.cn/v1/chat/completions';
+      headers={'Content-Type':'application/json','Authorization':'Bearer '+sfKey()};
+      candidates=[sfModel(),...SF_FALLBACKS.filter(m=>m!==sfModel())];
+    }
     let lastErr='',txt='';
     for(const model of candidates){
       try{
-        const r=await fetch('https://api.siliconflow.cn/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sfKey()},body:JSON.stringify({model,messages:[{role:'user',content}],max_tokens:3000})});
+        const r=await fetch(url,{method:'POST',headers,body:JSON.stringify({model,messages:[{role:'user',content}],max_tokens:3000})});
         const d=await r.json();
-        if(!r.ok){lastErr=d.message||('HTTP '+r.status);continue}
+        if(!r.ok){lastErr=(d.error&&d.error.message)||d.message||d.msg||('HTTP '+r.status);continue}
         const t=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;
         if(t){txt=t;break}
         lastErr='模型无返回';
