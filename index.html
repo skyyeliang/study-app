@@ -172,7 +172,9 @@ function seed(){
       q('语文','choice','"师者，所以传道受业解惑也"中"所以"的意思是（ ）',['A. 因此','B. ……的原因','C. 用来……的','D. 所以'],'C','此处"所以"表凭借，意为"用来……的"。整句：老师是用来传授道理、教授学业、解答疑惑的人。',['文言文'],3),
       q('英语','choice','The book ____ I bought yesterday is very interesting.',['A. who','B. whom','C. which','D. whose'],'C','先行词 the book 指物，关系词在从句中作宾语，用 which 或 that。',['定语从句'],2),
       q('英语','choice','—____ do you visit your grandparents? —Once a month.',['A. How long','B. How often','C. How soon','D. How far'],'B','答语 Once a month 表频率，应用 How often 提问。',['语法'],1),
-      q('英语','judge','"He suggested that we went there by bus." 该句语法正确。',[],'F','suggest 表"建议"接宾语从句时用虚拟语气：suggested that we (should) go，从句谓语用动词原形，不用 went。',['虚拟语气','易错'],3)
+      q('英语','judge','"He suggested that we went there by bus." 该句语法正确。',[],'F','suggest 表"建议"接宾语从句时用虚拟语气：suggested that we (should) go，从句谓语用动词原形，不用 went。',['虚拟语气','易错'],3),
+      q('数学','essay','已知函数 f(x)=x²−2ax+1 在区间 [1,+∞) 上单调递增，求实数 a 的取值范围。',[],'a ≤ 1，即 a∈(−∞,1]。','f(x) 开口向上，对称轴 x=a。在 [1,+∞) 上递增 ⇔ 对称轴在 1 的左侧（可取端点）⇔ a≤1。注意审题："在区间上递增"允许对称轴恰好落在区间端点。',['函数','解答题'],3),
+      q('物理','essay','质量 2 kg 的物体在水平拉力作用下由静止开始做匀加速直线运动，加速度 2 m/s²。求：(1) 拉力大小（摩擦力 4 N）；(2) 运动 4 s 末的速度；(3) 前 4 s 内的位移。',[],'(1) F = ma + f = 2×2 + 4 = 8 N；(2) v = at = 2×4 = 8 m/s；(3) x = ½at² = ½×2×16 = 16 m。','(1) 牛顿第二定律 F合 = F − f = ma，故 F = ma + f = 8 N；\n(2) 由 v = v₀ + at，v₀=0，得 v = 8 m/s；\n(3) 由 x = ½at² 得 x = 16 m。',['力学','计算题'],3)
     ],
     records:[],mistakes:{},settings:{dailyGoal:30}
   };
@@ -266,7 +268,7 @@ function renderBank(){
 }
 let curTag='';
 function selTag(btn,t){document.querySelectorAll('#tag-seg button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');curTag=t}
-function typeIcon(t){return t==='choice'?'🔘':t==='fill'?'✏️':'✔️'}
+function typeIcon(t){return t==='choice'?'🔘':t==='fill'?'✏️':t==='essay'?'📐':'✔️'}
 function startMixed(){
   const all=[...DB.questions];
   if(all.length<1)return toast('题库为空');
@@ -303,6 +305,9 @@ function renderQuiz(){
     body+=`<button class="btn block" id="submit-btn" style="margin-top:6px" onclick="submitChoice('${q.id}')" disabled>提交答案</button>`;
   }else if(q.type==='judge'){
     body+=`<div class="grid2"><button class="q-opt" style="text-align:center" onclick="submitJudge('${q.id}',true)">✔ 正确</button><button class="q-opt" style="text-align:center" onclick="submitJudge('${q.id}',false)">✘ 错误</button></div>`;
+  }else if(q.type==='essay'){
+    body+=`<textarea id="essay-ans" placeholder="写下完整解答过程，然后对答案自评" style="min-height:130px"></textarea>
+    <button class="btn block" style="margin-top:10px" onclick="showEssay('${q.id}',false)">提交并查看参考答案</button>`;
   }else{
     body+=`<input id="fill-ans" placeholder="输入答案" autocomplete="off">
     <button class="btn block" style="margin-top:10px" onclick="submitFill('${q.id}')">提交答案</button>`;
@@ -323,13 +328,26 @@ function afterAnswer(q,ok,userAns){
   <button class="btn block" style="margin-top:12px" onclick="nextQ()">${QZ.cur+1<QZ.ids.length?'下一题 →':'查看结果'}</button>`;
   document.querySelector('main').scrollTop=document.body.scrollHeight;window.scrollTo(0,document.body.scrollHeight);
 }
-function ansText(q){if(q.type==='choice')return 'ABCDEF'[q.options.findIndex((o,i)=>('ABCDEF'[i])===q.answer)]||q.answer;if(q.type==='judge')return q.answer==='T'?'正确':'错误';return Array.isArray(q.answer)?q.answer.join(' / '):q.answer}
+function ansText(q){if(q.type==='choice')return 'ABCDEF'[q.options.findIndex((o,i)=>('ABCDEF'[i])===q.answer)]||q.answer;if(q.type==='judge')return q.answer==='T'?'正确':'错误';if(q.type==='essay')return '见解析';return Array.isArray(q.answer)?q.answer.join(' / '):q.answer}
 function submitChoice(qid){
   const q=DB.questions.find(x=>x.id===qid);
   const realRight=q.options.findIndex((o,i)=>('ABCDEF'[i])===q.answer);
   const ok=picked===realRight;
   document.querySelectorAll('.q-opt').forEach((b,j)=>{b.style.pointerEvents='none';b.classList.remove('sel');if(j===realRight)b.classList.add('right');else if(j===picked)b.classList.add('wrong')});
   afterAnswer(q,ok,'ABCDEF'[picked]);
+}
+function showEssay(qid,inReview){
+  const q=DB.questions.find(x=>x.id===qid);
+  const ta=document.getElementById('essay-ans');if(ta)ta.disabled=true;
+  document.getElementById('ana-box').innerHTML=`<div class="ana"><b>参考答案：</b>\n${esc(q.answer||'（未录入参考答案）')}${q.analysis?'\n\n解析：'+esc(q.analysis):''}</div>
+  <div style="font-size:13px;color:var(--text-l);margin:10px 0 8px">对照答案自评：</div>
+  <div class="grid2"><button class="btn" onclick="essaySelf(${inReview},'${q.id}',true)">✔ 答对了</button><button class="btn red" onclick="essaySelf(${inReview},'${q.id}',false)">✘ 没答好</button></div>`;
+  document.querySelector('main').scrollTop=document.body.scrollHeight;window.scrollTo(0,document.body.scrollHeight);
+}
+function essaySelf(inReview,qid,ok){
+  const q=DB.questions.find(x=>x.id===qid);
+  const ta=document.getElementById('essay-ans');
+  if(inReview)rvResult(qid,ok);else afterAnswer(q,ok,(ta?ta.value:'').slice(0,50)||'(未作答)');
 }
 function submitJudge(qid,val){
   const q=DB.questions.find(x=>x.id===qid);
@@ -383,6 +401,7 @@ function renderReview(){
     ${q.image?`<img class="q-img" src="${q.image}">`:''}`;
   if(q.type==='choice')body+=q.options.map((o,i)=>`<button class="q-opt" id="opt${i}" onclick="pickOptR(${i})"><span class="k">${'ABCDEF'[i]}</span>${esc(o.replace(/^[A-F][.、．]\s*/,''))}</button>`).join('')+`<button class="btn block" style="margin-top:6px" id="rv-btn" onclick="rvChoice('${q.id}')" disabled>提交</button>`;
   else if(q.type==='judge')body+=`<div class="grid2"><button class="q-opt" style="text-align:center" onclick="rvJudge('${q.id}',true)">✔ 正确</button><button class="q-opt" style="text-align:center" onclick="rvJudge('${q.id}',false)">✘ 错误</button></div>`;
+  else if(q.type==='essay')body+=`<button class="btn block" onclick="showEssay('${q.id}',true)">显示参考答案</button>`;
   else body+=`<input id="fill-ans" placeholder="输入答案" autocomplete="off"><button class="btn block" style="margin-top:10px" onclick="rvFill('${q.id}')">提交</button>`;
   body+=`<div id="ana-box"></div></div>`;
   document.getElementById('page-wrong').innerHTML=body;
@@ -536,7 +555,8 @@ function editQuestion(id){
     <label>题型</label><select id="q-type" onchange="qTypeChange()">
       <option value="choice" ${q&&q.type==='choice'?'selected':''}>单选题</option>
       <option value="fill" ${q&&q.type==='fill'?'selected':''}>填空题</option>
-      <option value="judge" ${q&&q.type==='judge'?'selected':''}>判断题</option></select>
+      <option value="judge" ${q&&q.type==='judge'?'selected':''}>判断题</option>
+      <option value="essay" ${q&&q.type==='essay'?'selected':''}>解答题</option></select>
     <label>题干</label><textarea id="q-content" placeholder="题目内容">${q?esc(q.content):''}</textarea>
     <label>配图（可选）</label><input type="file" accept="image/*" onchange="qImgChange(this)">
     ${qEditImg?`<img src="${qEditImg}" style="max-width:100%;border-radius:8px;margin-top:6px">`:''}
@@ -553,6 +573,8 @@ function qTypeChange(q){
     area.innerHTML=`<label>选项（每行一个，正确答案行首加 *）</label><textarea id="q-options" style="min-height:110px" placeholder="*正确选项前面加星号&#10;选项A&#10;*选项B&#10;选项C&#10;选项D">${q?esc(q.options.map((o,i)=>('ABCDEF'[i]===q.answer?'*':'')+o).join('\n')):''}</textarea>`;
   }else if(t==='fill'){
     area.innerHTML=`<label>答案（多个可接受答案用 / 分隔）</label><input id="q-answer" value="${q?esc(Array.isArray(q.answer)?q.answer.join('/'):q.answer):''}" placeholder="如：苏打/纯碱">`;
+  }else if(t==='essay'){
+    area.innerHTML=`<label>参考答案</label><textarea id="q-answer" style="min-height:100px" placeholder="完整解题过程和结论">${q?esc(q.answer||''):''}</textarea>`;
   }else{
     area.innerHTML=`<label>正确答案</label><select id="q-answer"><option value="T" ${q&&q.answer==='T'?'selected':''}>正确</option><option value="F" ${q&&q.answer==='F'?'selected':''}>错误</option></select>`;
   }
@@ -570,6 +592,8 @@ function saveQuestion(id){
   }else if(type==='fill'){
     answer=document.getElementById('q-answer').value.trim();if(!answer)return toast('答案必填');
     answer=answer.split('/').map(s=>s.trim()).filter(Boolean);if(answer.length===1)answer=answer[0];
+  }else if(type==='essay'){
+    answer=document.getElementById('q-answer').value.trim();if(!answer)return toast('参考答案必填');
   }else{answer=document.getElementById('q-answer').value}
   const tags=document.getElementById('q-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
   const difficulty=parseInt(document.getElementById('q-diff').value)||3;
@@ -662,22 +686,64 @@ function copyPrompt(){
   if(navigator.clipboard){navigator.clipboard.writeText(ta.value).then(()=>toast('已复制，去粘贴给 AI'))}
   else{document.execCommand('copy');toast('已复制')}
 }
+/* 轻量块格式解析：【题】【选】【答】【析】【型】【标】 */
+function parseBlocks(text){
+  const norm=text.replace(/^(#{1,4}\s*|\*\*)?(第\s*\d+\s*题|题目\s*\d+|题\s*\d+)[:：.]?\s*(\*\*)?$/gm,'【题】');
+  const parts=norm.split(/【题】/).slice(1);
+  const pick=(p,tag)=>{const m=p.match(new RegExp('【'+tag+'】\\s*([\\s\\S]*?)(?=【|$)'));return m?m[1].trim():''};
+  const out=[];
+  const half=s=>s.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  parts.forEach(p=>{
+    const cm=p.match(/^([\s\S]*?)(?=【|$)/);
+    const content=(cm?cm[1]:'').trim().replace(/^[:：]\s*/,'');
+    if(!content)return;
+    const optsRaw=pick(p,'选'),ansRaw=half(pick(p,'答').replace(/^[:：]\s*/,'')),ana=pick(p,'析'),tpRaw=pick(p,'型'),tgRaw=pick(p,'标');
+    let options=[];
+    if(optsRaw){
+      options=optsRaw.split(/\s*(?=[A-FＡ-Ｆ]\s*[.、．])/).map(s=>s.trim()).filter(Boolean).map(s=>s.replace(/^[A-FＡ-Ｆ]\s*[.、．]?\s*/,'').trim()).filter(Boolean);
+    }
+    let type;
+    if(/解答|解析|计算|大题|essay/i.test(tpRaw))type='essay';
+    else if(options.length>=2)type='choice';
+    else if(/^(对|错|正确|错误|T|F|√|×)$/i.test(ansRaw.replace(/\s/g,'')))type='judge';
+    else type='fill';
+    let answer;
+    if(type==='choice'){
+      const a=ansRaw.toUpperCase().match(/[A-F]/);
+      if(!a||'ABCDEF'.indexOf(a[0])>=options.length)return;
+      answer=a[0];
+    }else if(type==='judge'){
+      answer=/^(对|正确|T|√)/i.test(ansRaw.replace(/\s/g,''))?'T':'F';
+    }else if(type==='fill'){
+      answer=ansRaw;
+      if(answer.includes('/'))answer=answer.split('/').map(s=>s.trim()).filter(Boolean);
+      if(Array.isArray(answer)&&answer.length===1)answer=answer[0];
+    }else{answer=ansRaw}
+    const tags=tgRaw?tgRaw.split(/[,，、]/).map(s=>s.trim()).filter(Boolean):[];
+    out.push({type,content,options,answer,analysis:ana,tags,difficulty:3});
+  });
+  return out;
+}
 function importAI(){
   const raw=document.getElementById('ai-answer').value;
   if(!raw.trim())return toast('请先粘贴 AI 的回答');
-  let jsonStr=raw;
-  const m=raw.match(/```(?:json)?\s*([\s\S]*?)\u0060``/);
+  let arr=null;let jsonStr='';
+  const m=raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   if(m)jsonStr=m[1];
+  else if(raw.trim().startsWith('['))jsonStr=raw.trim();
   else{const a=raw.indexOf('['),b=raw.lastIndexOf(']');if(a>=0&&b>a)jsonStr=raw.slice(a,b+1)}
-  let arr;
-  try{arr=JSON.parse(jsonStr)}catch(_){return toast('解析失败：回答不是有效 JSON，检查是否复制完整')}
-  if(!Array.isArray(arr))return toast('解析失败：需要 JSON 数组');
+  if(jsonStr){
+    try{arr=JSON.parse(jsonStr)}
+    catch(_){try{arr=JSON.parse(jsonStr.replace(/,\s*([}\]])/g,'$1').replace(/'/g,'"'))}catch(e){arr=null}}
+  }
+  if(!arr||!Array.isArray(arr)||!arr.length)arr=parseBlocks(raw);
+  if(!arr.length)return toast('未能识别题目：支持 JSON 数组或【题】【答】块格式');
   let ok=0,fail=0;const errs=[];
   arr.forEach((it,i)=>{
     try{
       let type=String(it.type||'').toLowerCase();
-      if(['choice','单选'].includes(type))type='choice';else if(['fill','填空'].includes(type))type='fill';else if(['judge','判断'].includes(type))type='judge';
-      if(!['choice','fill','judge'].includes(type))throw'未知题型:'+it.type;
+      if(['choice','单选'].includes(type))type='choice';else if(['fill','填空'].includes(type))type='fill';else if(['judge','判断'].includes(type))type='judge';else if(['essay','解答','解析','计算','大题'].includes(type))type='essay';
+      if(!['choice','fill','judge','essay'].includes(type))throw'未知题型:'+it.type;
       const content=String(it.content||'').trim();if(!content)throw'缺题干';
       const subject=document.getElementById('ai-subj').value;
       let options=[],answer;
@@ -691,6 +757,9 @@ function importAI(){
         if(Array.isArray(a))a=a.join('/');
         answer=String(a||'').trim();if(!answer)throw'填空题缺答案';
         if(answer.includes('/'))answer=answer.split('/').map(s=>s.trim()).filter(Boolean);
+      }else if(type==='essay'){
+        answer=String(it.answer||'').trim();
+        if(!answer&&!String(it.analysis||'').trim())throw'解答题需有参考答案或解析';
       }else{
         let a=String(it.answer||'').trim().toUpperCase();
         if(['T','TRUE','正确','对','√'].includes(a))answer='T';
