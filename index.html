@@ -612,15 +612,23 @@ function importData(inp){
 /* ================= AI 出题助手 ================= */
 function aiGenModal(){
   openModal(`<h3>✨ AI 出题助手</h3>
+    <div class="seg" id="ai-mode-seg"><button class="on" onclick="aiMode(this,'gen')">AI 出题</button><button onclick="aiMode(this,'rec')">AI 录错题</button></div>
+    <div id="ai-gen-area">
     <label>科目</label><select id="ai-subj">${SUBJECTS.map(s=>`<option>${s}</option>`).join('')}</select>
     <label>范围 / 知识点</label><input id="ai-scope" placeholder="如：三角函数 / 牛顿运动定律 / 定语从句">
     <label>题型</label><select id="ai-type"><option value="choice">单选题</option><option value="fill">填空题</option><option value="judge">判断题</option><option value="mix">混合</option></select>
     <label>数量</label><input type="number" id="ai-n" value="10" min="1" max="30">
     <label>难度（1-5，3 为中等）</label><input type="number" id="ai-diff" value="3" min="1" max="5">
+    </div>
+    <div id="ai-rec-area" style="display:none">
+    <label>科目</label><select id="ai-rec-subj">${SUBJECTS.map(s=>`<option>${s}</option>`).join('')}</select>
+    <label>粘贴错题内容（或留空，直接把提示词连同错题照片发给 AI）</label>
+    <textarea id="ai-rec-text" style="min-height:100px" placeholder="把错题文字粘贴到这里。如果是照片，留空即可——生成提示词后，打开豆包把提示词和错题照片一起发过去。"></textarea>
+    </div>
     <div class="row" style="margin-top:14px"><button class="btn" style="flex:1;background:#6b21a8" onclick="genPrompt()">生成提示词</button><button class="btn ghost" onclick="closeModal()">关闭</button></div>
     <div id="ai-step2" style="display:none">
       <div class="divider"></div>
-      <label>第 1 步：复制提示词，发给豆包 / Kimi / 文心等任意 AI</label>
+      <label>第 1 步：复制提示词，发给豆包 / Kimi / 文心等任意 AI（录错题时可连同错题照片一起发）</label>
       <textarea id="ai-prompt" style="min-height:140px;font-size:13px"></textarea>
       <button class="btn small block" style="margin-top:8px" onclick="copyPrompt()">📋 复制提示词</button>
       <label style="margin-top:14px">第 2 步：把 AI 的完整回答粘贴到下面</label>
@@ -629,13 +637,25 @@ function aiGenModal(){
       <div id="ai-result" class="hint"></div>
     </div>`);
 }
+let aiCurMode='gen';
+function aiMode(btn,m){document.querySelectorAll('#ai-mode-seg button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');aiCurMode=m;
+  document.getElementById('ai-gen-area').style.display=m==='gen'?'block':'none';
+  document.getElementById('ai-rec-area').style.display=m==='rec'?'block':'none';
+  document.getElementById('ai-step2').style.display='none'}
 const AI_TYPE_TXT={choice:'单选题',fill:'填空题',judge:'判断题',mix:'混合题型（选择为主，搭配填空和判断）'};
 function genPrompt(){
+  const el=document.getElementById('ai-prompt');
+  if(aiCurMode==='rec'){
+    const sj=document.getElementById('ai-rec-subj').value;
+    const txt=document.getElementById('ai-rec-text').value.trim();
+    el.value=`你是错题整理助手。${txt?'请把我提供的错题内容整理成题库格式。':'请识别图片中的错题并整理成题库格式（我会同时发错题照片）。'}\n\n要求：\n1. 准确识别题干、选项（如有）\n2. 给出正确答案和详细解析；若原题已有解析可保留并优化，没有则自己写出完整解题过程\n3. 自动判断题型：单选 choice / 填空 fill / 判断 judge\n4. 每题标注涉及的知识点作为 tags\n5. 科目为${sj}\n6. 严格按下面的 JSON 数组格式输出，不要输出任何 JSON 以外的内容：\n\n[\n  {\n    "type": "choice",\n    "content": "题干文字",\n    "options": ["选项A","选项B","选项C","选项D"],\n    "answer": "B",\n    "analysis": "详细解析",\n    "tags": ["知识点"],\n    "difficulty": 3\n  },\n  {\n    "type": "fill",\n    "content": "题干，空缺用____表示",\n    "options": [],\n    "answer": "标准答案",\n    "analysis": "详细解析",\n    "tags": ["知识点"],\n    "difficulty": 3\n  },\n  {\n    "type": "judge",\n    "content": "判断题干",\n    "options": [],\n    "answer": "T",\n    "analysis": "详细解析",\n    "tags": ["知识点"],\n    "difficulty": 3\n  }\n]\n\n说明：type 取值 choice/fill/judge；choice 的 answer 是正确选项字母；fill 的 answer 是字符串（多个可接受答案用 / 分隔）；judge 的 answer 填 T（正确）或 F（错误）。${txt?'\n\n错题内容如下：\n'+txt:''}`;
+  }else{
   const sj=document.getElementById('ai-subj').value,scope=document.getElementById('ai-scope').value.trim()||'本学期重点内容';
   const tp=document.getElementById('ai-type').value,n=document.getElementById('ai-n').value,diff=document.getElementById('ai-diff').value;
   const prompt=`你是一位上海高中${sj}命题老师，熟悉沪教版教材和高考考点。请针对【${scope}】出 ${n} 道${AI_TYPE_TXT[tp]}，难度 ${diff}/5。\n\n要求：\n1. 考点准确，不超纲，题目表述清晰无歧义\n2. 每道题附详细解析，说明考点和易错点\n3. 严格按下面的 JSON 数组格式输出，不要输出任何 JSON 以外的内容：\n\n[\n  {\n    "type": "choice",\n    "content": "题干文字",\n    "options": ["选项A","选项B","选项C","选项D"],\n    "answer": "B",\n    "analysis": "详细解析",\n    "tags": ["${scope}"],\n    "difficulty": ${diff}\n  },\n  {\n    "type": "fill",\n    "content": "题干，空缺用____表示",\n    "options": [],\n    "answer": "标准答案",\n    "analysis": "详细解析",\n    "tags": ["${scope}"],\n    "difficulty": ${diff}\n  },\n  {\n    "type": "judge",\n    "content": "判断题干",\n    "options": [],\n    "answer": "T",\n    "analysis": "详细解析，指出错误的话给出正确说法",\n    "tags": ["${scope}"],\n    "difficulty": ${diff}\n  }\n]\n\n说明：type 取值 choice/fill/judge；choice 的 answer 是正确选项字母；fill 的 answer 是字符串（多个可接受答案用 / 分隔）；judge 的 answer 填 T（正确）或 F（错误）。`;
-  document.getElementById('ai-prompt').value=prompt;
+  el.value=prompt;
   document.getElementById('ai-step2').style.display='block';
+  }
 }
 function copyPrompt(){
   const ta=document.getElementById('ai-prompt');ta.select();
@@ -679,7 +699,7 @@ function importAI(){
       }
       const tags=Array.isArray(it.tags)?it.tags.map(String):String(it.tags||'').split(/[,，]/);
       const difficulty=Math.min(5,Math.max(1,parseInt(it.difficulty)||3));
-      DB.questions.push({id:uid(),subject,type,content,options,answer,tags:tags.map(s=>s.trim()).filter(Boolean),difficulty,analysis:String(it.analysis||''),image:'',created:Date.now()});
+      DB.questions.push({id:uid(),subject:(aiCurMode==='rec'?document.getElementById('ai-rec-subj').value:document.getElementById('ai-subj').value),type,content,options,answer,tags:tags.map(s=>s.trim()).filter(Boolean),difficulty,analysis:String(it.analysis||''),image:'',created:Date.now()});
       ok++;
     }catch(e){fail++;errs.push(`第${i+1}题：${e}`)}
   });
